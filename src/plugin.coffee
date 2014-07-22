@@ -5,6 +5,9 @@ OspfdRegistry = require './ospfd-registry'
 
 async = require('async')
 
+oservice = null
+zservice = null
+
 @include = ->
     agent = @settings.agent
     unless agent?
@@ -62,6 +65,18 @@ async = require('async')
                     return @next err
                 else
                     @send {id: zservice.id, running: true}
+
+    @get '/quagga/zebra/config': ->
+        @send zservice.getconfig()
+
+    @get '/quagga/zebra/invocation': ->
+        @send zservice.getinvocation()
+
+    @get '/quagga/ospfd/config': ->
+        @send oservice.getconfig()
+
+    @get '/quagga/ospfd/invocation': ->
+        @send oservice.getinvocation()
 
     @post '/quagga/ospfd': ->
         try

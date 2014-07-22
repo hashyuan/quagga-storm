@@ -39,7 +39,7 @@ class zebraService extends StormService
 
     invocation:
         name: 'zebra'
-        path: '/usr/local/sbin'
+        path: '/usr/lib/quagga'
         monitor: true
         args: []
         options:
@@ -52,7 +52,7 @@ class zebraService extends StormService
             delete data.instance
 
         opts ?= {}
-        opts.configPath ?= "/var/stormflash/plugins/zebra"
+        opts.configPath ?= "/var/stormflash/plugins/quagga"
         opts.logPath ?= "/var/log/zebra"
 
         super id, data, opts
@@ -79,6 +79,10 @@ class zebraService extends StormService
                     when "boolean"
                         zebraconfig += key + "\n"                        
             callback zebraconfig
+    getconfig: ->
+        return @configs
+    getinvocation: ->
+        return @invocation
 
     destructor: ->
         @eliminate()

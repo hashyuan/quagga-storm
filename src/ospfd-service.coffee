@@ -31,7 +31,7 @@ class ospfdService extends StormService
                                 'network' : {type:"string", required:false}      
     invocation:
         name: 'ospfd'
-        path: '/usr/local/sbin'
+        path: '/usr/lib/quagga'
         monitor: true
         args: []
         options:
@@ -44,8 +44,8 @@ class ospfdService extends StormService
             delete data.instance
 
         opts ?= {}
-        opts.configPath ?= "/var/stormflash/plugins/zebra"
-        opts.logPath ?= "/var/log/zebra"
+        opts.configPath ?= "/var/stormflash/plugins/quagga"
+        opts.logPath ?= "/var/log/ospfd"
 
         super id, data, opts
 
@@ -78,6 +78,11 @@ class ospfdService extends StormService
                     when "boolean"
                         ospfdconfig += key + "\n"                        
             callback ospfdconfig
+
+    getconfig: ->
+        return @configs
+    getinvocation: ->
+        return @invocation
 
     destructor: ->
         @eliminate()
