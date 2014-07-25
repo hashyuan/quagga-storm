@@ -5,7 +5,7 @@ fs = require 'fs'
 class zebraService extends StormService
 
     schema :
-        name: "openvpn"
+        name: "zebra"
         type: "object"
         additionalProperties: true
         properties:
@@ -25,7 +25,9 @@ class zebraService extends StormService
                         description: {type:"string", required:true}
                         'ip address':{type:"string", required:true}
                         'ipv6 address':{type:"string", required:false}
-                        bandwidth: {type:"integer", required:true}
+                        bandwidth: {type:"integer", required:false}
+                        multicast: {type:"boolean", required:false}
+                        "link-detect": {type:"boolean", required:false}
             iproutes:
                 type: "array"
                 items:
@@ -35,7 +37,7 @@ class zebraService extends StormService
                     additionalProperties: true
                     properties:
                         'ip route' : {type:"string", required:false}            
-                        
+                        'ipv6 route' : {type:"string", required:false}            
 
     invocation:
         name: 'zebra'

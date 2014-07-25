@@ -1,13 +1,13 @@
 StormRegistry = require 'stormregistry'
 StormData = require 'stormdata'
 
-OspfdService = require './ospfd-service'
+RipdService = require './ripd-service'
 
-class ospfdRegistry extends StormRegistry
+class RipdRegistry extends StormRegistry
     constructor: (filename) ->
         @on 'load', (key,val) ->
             console.log "restoring #{key} with:",val
-            entry = new OspfdService key,val
+            entry = new RipdService key,val
             if entry?
                 entry.saved = true
                 @add entry
@@ -19,7 +19,7 @@ class ospfdRegistry extends StormRegistry
         super filename
 
     add: (service) ->
-        return unless service instanceof OspfdService
+        return unless service instanceof RipdService
         entry = super service.id, service
         # register for 'running' events of this service and update DB
         entry.on "running", (instance) =>
@@ -36,10 +36,10 @@ class ospfdRegistry extends StormRegistry
         entry = super key
         return unless entry?
 
-        if entry.data? and entry.data instanceof OspfdService
+        if entry.data? and entry.data instanceof RipdService
             entry.data.id = entry.id
             entry.data
         else
             entry
 
-module.exports  = ospfdRegistry
+module.exports  = RipdRegistry

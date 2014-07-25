@@ -2,10 +2,10 @@ StormService = require('stormservice')
 merge = require('fmerge')
 fs = require 'fs'
 
-class ospfdService extends StormService
+class RipdService extends StormService
 
     schema :
-        name: "ospfd"
+        name: "Ripd"
         type: "object"
         additionalProperties: true
         properties:
@@ -30,7 +30,7 @@ class ospfdService extends StormService
                             properties:
                                 'network' : {type:"string", required:false}      
     invocation:
-        name: 'ospfd'
+        name: 'ripd'
         path: '/usr/lib/quagga'
         monitor: true
         args: []
@@ -45,39 +45,39 @@ class ospfdService extends StormService
 
         opts ?= {}
         opts.configPath ?= "/var/stormflash/plugins/quagga"
-        opts.logPath ?= "/var/log/ospfd"
+        opts.logPath ?= "/var/log/Ripd"
 
         super id, data, opts
 
         @configs =
-            service:    filename:"#{@configPath}/ospfd_#{@id}.conf"
+            service:    filename:"#{@configPath}/Ripd_#{@id}.conf"
 
         @invocation = merge @invocation,
             args: ["--config_file", "#{@configs.service.filename}","-d"]
             options: { stdio: ["ignore", @out, @err] }
 
         @configs.service.generator = (callback) =>
-            ospfdconfig = ''
+            Ripdconfig = ''
             for key, val of @data
                 switch (typeof val)
                     #router object
                     when "object"                        
                         for keyy,value of val
                             switch (typeof value)
-                                #router ospf
+                                #router rip
                                 when "string","number"                                        
-                                    ospfdconfig += keyy + ' ' + value + "\n"
+                                    Ripdconfig += keyy + ' ' + value + "\n"
                                 #network 
                                 when "object"
                                     #array
                                     for objj in value 
                                         for keyyy,valuee of objj
-                                            ospfdconfig += keyyy + ' ' + valuee + "\n"
+                                            Ripdconfig += keyyy + ' ' + valuee + "\n"
                     when "number", "string"
-                        ospfdconfig += key + ' ' + val + "\n"
+                        Ripdconfig += key + ' ' + val + "\n"
                     when "boolean"
-                        ospfdconfig += key + "\n"                        
-            callback ospfdconfig
+                        Ripdconfig += key + "\n"                        
+            callback Ripdconfig
 
     getconfig: ->
         return @configs
@@ -89,4 +89,4 @@ class ospfdService extends StormService
         #@out.close()
         #@err.close()
         #@emit 'destroy'
-module.exports = ospfdService
+module.exports = RipdService
