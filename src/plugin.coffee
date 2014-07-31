@@ -4,6 +4,8 @@ OspfdService = require './ospfd-service'
 OspfdRegistry = require './ospfd-registry'
 RipdService = require './ripd-service'
 RipdRegistry = require './ripd-registry'
+BgpdService = require './bgpd-service'
+BgpdRegistry = require './bgpd-registry'
 
 
 async = require('async')
@@ -67,6 +69,24 @@ async = require('async')
                     else
                         agent.log "restore: Ripd #{service.id} invoke succeeded wtih #{instance}"
 
+    #bgpd routine
+    bregistry = new BgpdRegistry plugindir+"/Bgpd.db"    
+    bregistry.on 'ready', ->
+        for service in @list()
+            continue unless service instanceof BgpdService
+
+            agent.log "restore: trying to recover:", service
+            do (service) -> service.generate (err) ->
+                if err?
+                    return agent.log "restore: Bgpd #{service.id} failed to generate configs!"
+                agent.invoke service, (err, instance) ->
+                    if err?
+                        agent.log "restore: Bgpd #{service.id} invoke failed with:", err
+                    else
+                        agent.log "restore: Bgpd #{service.id} invoke succeeded wtih #{instance}"
+
+
+
 
     @post '/quagga/zebra': ->
         try
@@ -118,6 +138,23 @@ async = require('async')
                     return @next err
                 else
                     @send {id: rservice.id, running: true}
+
+    @post '/quagga/bgpd': ->
+        try
+            bservice = new BgpdService null, @body, {}
+        catch err
+            return @next err
+            
+        bservice.generate (err, results) =>
+            return @next err if err?
+            agent.log "POST /quagga/bgpd generation result  : " +  JSON.stringify results
+            bregistry.add bservice
+            agent.invoke bservice, (err, instance) =>
+                if err?
+                    #serverRegistry.remove service.id
+                    return @next err
+                else
+                    @send {id: bservice.id, running: true}
 
 
 ###
