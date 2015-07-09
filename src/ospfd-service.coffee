@@ -11,8 +11,8 @@ class ospfdService extends StormService
         properties:
             hostname:         {"type":"string", "required":true}
             password:         {"type":"string", "required":true}
-            'enable password': {"type":"string", "required":false}
-            'log file':        {"type":"string", "required":false}
+            'enable-password': {"type":"string", "required":false}
+            'log-file':        {"type":"string", "required":false}
             interfaces:
                 name: "interfaces"
                 type: "array"

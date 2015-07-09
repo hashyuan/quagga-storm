@@ -11,8 +11,8 @@ class zebraService extends StormService
         properties:
             hostname:         {"type":"string", "required":false}
             password:         {"type":"string", "required":true}
-            'enable password': {"type":"string", "required":false}
-            'log file':        {"type":"string", "required":false}
+            'enable-password': {"type":"string", "required":false}
+            'log-file':        {"type":"string", "required":false}
             interfaces:
                 name: "interfaces"
                 type: "array"
@@ -24,10 +24,10 @@ class zebraService extends StormService
                     properties:
                         description: {type:"string", required:false}
                         'link-detect':       {"type":"boolean", "required":false}
-                        'ip address':        {"type":"string", "required":false}
-            'ip route':        {"type":"string", "required":false}
-            'ip forwarding':   {"type":"boolean", "required":false}
-            'ipv6 forwarding':   {"type":"boolean", "required":false}
+                        'ip-address':        {"type":"string", "required":false}
+            'ip-route':        {"type":"string", "required":false}
+            'ip-forwarding':   {"type":"boolean", "required":false}
+            'ipv6-forwarding':   {"type":"boolean", "required":false}
 
     invocation:
         name: 'zebra'
