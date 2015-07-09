@@ -1,13 +1,13 @@
 {
   "name": "zebra-storm",
   "description": "zebra-storm plugin module manages stormflash enabled zebra instance",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "author": {
     "name": "Suresh Kumar"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/sureshkvl/quagga-storm"
+    "url": "https://github.com/stormstack/quagga-storm"
   },
   "dependencies": {
     "async": ">=0.9.0",
@@ -49,14 +49,10 @@
   "scripts": {
     "prepublish": "mkdir -p lib; coffee -o lib -c src"
   },
-  "contributors": [],
+  "contributors": ["Sivaprasath Busa"],
   "readmeFilename": "README.md",
-  "bugs": {
-    "url": "https://github.com/sureshkvl/quagga-storm/issues"
-  },
-  "homepage": "https://github.com/sureshkvl/quagga-storm",
   "readme": "",
-  "_id": "quagga-storm@0.0.1",
+  "_id": "quagga-storm@0.1.0",
   "dist": {    
   },
   "_from": "quagga-storm@*",

@@ -9,11 +9,12 @@ class zebraService extends StormService
         type: "object"
         additionalProperties: true
         properties:
-            hostname:         {"type":"string", "required":true}
+            hostname:         {"type":"string", "required":false}
             password:         {"type":"string", "required":true}
-            'enable password': {"type":"string", "required":true}
-            'log file':        {"type":"string", "required":true}
+            'enable password': {"type":"string", "required":false}
+            'log file':        {"type":"string", "required":false}
             interfaces:
+                name: "interfaces"
                 type: "array"
                 items:
                     name: "interface"
@@ -21,27 +22,16 @@ class zebraService extends StormService
                     required: false
                     additionalProperties: true
                     properties:
-                        interface: {type:"string", required:true}            
-                        description: {type:"string", required:true}
-                        'ip address':{type:"string", required:true}
-                        'ipv6 address':{type:"string", required:false}
-                        bandwidth: {type:"integer", required:false}
-                        multicast: {type:"boolean", required:false}
-                        "link-detect": {type:"boolean", required:false}
-            iproutes:
-                type: "array"
-                items:
-                    name: "iproute"
-                    type: "object"
-                    required: false
-                    additionalProperties: true
-                    properties:
-                        'ip route' : {type:"string", required:false}            
-                        'ipv6 route' : {type:"string", required:false}            
+                        description: {type:"string", required:false}
+                        'link-detect':       {"type":"boolean", "required":false}
+                        'ip address':        {"type":"string", "required":false}
+            'ip route':        {"type":"string", "required":false}
+            'ip forwarding':   {"type":"boolean", "required":false}
+            'ipv6 forwarding':   {"type":"boolean", "required":false}
 
     invocation:
         name: 'zebra'
-        path: '/usr/lib/quagga'
+        path: '/sbin'
         monitor: true
         args: []
         options:
@@ -71,7 +61,7 @@ class zebraService extends StormService
             for key, val of @data
                 switch (typeof val)
                     when "object"
-                        for obj in val	
+                        for obj in val
                             console.log "obj is " + obj	
                             for keyy,value of obj
                                 console.log "keyy , value " + keyy
@@ -79,7 +69,7 @@ class zebraService extends StormService
                     when "number", "string"
                         zebraconfig += key + ' ' + val + "\n"
                     when "boolean"
-                        zebraconfig += key + "\n"                        
+                        zebraconfig += key + "\n"
             callback zebraconfig
     getconfig: ->
         return @configs
