@@ -43,4 +43,3 @@ class zebraRegistry extends StormRegistry
             entry
 
 module.exports  = zebraRegistry
-

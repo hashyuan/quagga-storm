@@ -11,27 +11,37 @@ class ospfdService extends StormService
         properties:
             hostname:         {"type":"string", "required":true}
             password:         {"type":"string", "required":true}
-            'enable password': {"type":"string", "required":true}
-            'log file':        {"type":"string", "required":true}
-            protocol:
-                name: "router"
+            'enable-password': {"type":"string", "required":false}
+            'log-file':        {"type":"string", "required":false}
+            interfaces:
+                name: "interfaces"
+                type: "array"
+                items:
+                    name: "interface"
+                    type: "object"
+                    required: false
+                    additionalProperties: true
+                    properties:
+                        description: {type:"string", required:false}
+            routes:
+                name: "router ospf"
                 type: "object"
-                required:true
+                required: false
                 additionalProperties: true
                 properties:
-                    router: {type:"string", required:true}            
                     networks:
+                        name: "networks"
                         type: "array"
                         items:
                             name: "network"
-                            type: "object"
-                            required: false
-                            additionalProperties: true
-                            properties:
-                                'network' : {type:"string", required:false}      
+                            type: "string"
+                            required:false
+                    'default-information': {type:"string", required:false}
+            'line': {"type":"string", "required":false}
+            
     invocation:
         name: 'ospfd'
-        path: '/usr/lib/quagga'
+        path: '/bin'
         monitor: true
         args: []
         options:
@@ -61,22 +71,22 @@ class ospfdService extends StormService
             for key, val of @data
                 switch (typeof val)
                     #router object
-                    when "object"                        
+                    when "object"
                         for keyy,value of val
                             switch (typeof value)
                                 #router ospf
-                                when "string","number"                                        
+                                when "string","number"
                                     ospfdconfig += keyy + ' ' + value + "\n"
                                 #network 
                                 when "object"
                                     #array
-                                    for objj in value 
+                                    for objj in value
                                         for keyyy,valuee of objj
                                             ospfdconfig += keyyy + ' ' + valuee + "\n"
                     when "number", "string"
                         ospfdconfig += key + ' ' + val + "\n"
                     when "boolean"
-                        ospfdconfig += key + "\n"                        
+                        ospfdconfig += key + "\n"
             callback ospfdconfig
 
     getconfig: ->
