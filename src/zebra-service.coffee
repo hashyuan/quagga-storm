@@ -7,6 +7,7 @@ class zebraService extends StormService
     schema :
         name: "zebra"
         type: "object"
+        required: true
         additionalProperties: true
         properties:
             hostname:         {"type":"string", "required":false}
@@ -17,17 +18,18 @@ class zebraService extends StormService
                 name: "interfaces"
                 type: "array"
                 items:
-                    name: "interface"
                     type: "object"
                     required: false
                     additionalProperties: true
                     properties:
+                        name: {type:"string",required:"false"}
                         description: {type:"string", required:false}
                         'link-detect':       {"type":"boolean", "required":false}
                         'ip-address':        {"type":"string", "required":false}
             'ip-route':        {"type":"string", "required":false}
             'ip-forwarding':   {"type":"boolean", "required":false}
             'ipv6-forwarding':   {"type":"boolean", "required":false}
+            'line':        {"type":"string", "required":false}
 
     invocation:
         name: 'zebra'
@@ -38,6 +40,26 @@ class zebraService extends StormService
             detached: true
             stdio: ["ignore", -1, -1]
 
+    # A function to process arrays and build ospf config
+    processArray: (arraykey, value, config) ->
+
+        for obj in value
+            for key,valuee of obj
+                switch (typeof valuee)
+                    when "number", "string"
+                        switch key
+                            when "name"
+                                if arraykey is "interfaces"
+                                    config += "interface"+ ' ' + valuee + "\n"
+                            when "ip-address"
+                                config += ' ' + "ip address" + ' ' + valuee + "\n"
+                            else
+                                config += ' ' + key + ' ' + valuee + "\n"
+                    when "boolean"
+                        config += ' ' + key + "\n"
+        config
+
+
     constructor: (id, data, opts) ->
         if data.instance?
             @instance = data.instance
@@ -45,7 +67,7 @@ class zebraService extends StormService
 
         opts ?= {}
         opts.configPath ?= "/var/stormflash/plugins/quagga"
-        opts.logPath ?= "/var/log/zebra"
+        opts.logPath ?= "/var/log/quagga"
 
         super id, data, opts
 
@@ -53,7 +75,7 @@ class zebraService extends StormService
             service:    filename:"#{@configPath}/zebra_#{@id}.conf"
 
         @invocation = merge @invocation,
-            args: ["--config_file", "#{@configs.service.filename}","-d"]
+            args: ["--config_file=#{@configs.service.filename}","-d"]
             options: { stdio: ["ignore", @out, @err] }
 
         @configs.service.generator = (callback) =>
@@ -61,15 +83,23 @@ class zebraService extends StormService
             for key, val of @data
                 switch (typeof val)
                     when "object"
-                        for obj in val
-                            console.log "obj is " + obj	
-                            for keyy,value of obj
-                                console.log "keyy , value " + keyy
-                                zebraconfig += keyy + ' ' + value + "\n"
+                        zebraconfig+= processArray key, val, zebraconfig
                     when "number", "string"
-                        zebraconfig += key + ' ' + val + "\n"
+                        switch key
+                            when "enable-password"
+                                zebraconfig += "enable password" + ' ' + val + "\n"
+                            when "log-file"
+                                zebraconfig += "log file" + ' ' + val + "\n"
+                            when "ip-route"
+                                zebraconfig += "ip route" + ' ' + val + "\n"
+                            else
+                                zebraconfig += key + ' ' + val + "\n"
                     when "boolean"
-                        zebraconfig += key + "\n"
+                        switch key
+                            when "ip-forwarding"
+                                zebraconfig += "ip forwarding" + "\n"
+                            when "ipv6-forwarding"
+                                zebraconfig += "ipv6 forwarding" + "\n"
             callback zebraconfig
     getconfig: ->
         return @configs
@@ -81,4 +111,5 @@ class zebraService extends StormService
         #@out.close()
         #@err.close()
         #@emit 'destroy'
+
 module.exports = zebraService
