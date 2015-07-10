@@ -2,11 +2,12 @@ ZebraService = require './zebra-service'
 ZebraRegistry = require './zebra-registry'
 OspfdService = require './ospfd-service'
 OspfdRegistry = require './ospfd-registry'
+###
 RipdService = require './ripd-service'
 RipdRegistry = require './ripd-registry'
 BgpdService = require './bgpd-service'
 BgpdRegistry = require './bgpd-registry'
-
+###
 
 async = require('async')
 
@@ -22,7 +23,7 @@ async = require('async')
     plugindir ?= "/var/stormflash/plugins/zebra"
 
     # Zebra routine
-    zregistry = new ZebraRegistry plugindir+"/Zebra.db"    
+    zregistry = new ZebraRegistry plugindir+"/zebra.db"
     zregistry.on 'ready', ->
         for service in @list()
             continue unless service instanceof ZebraService
@@ -38,7 +39,7 @@ async = require('async')
                         agent.log "restore: Zebra #{service.id} invoke succeeded wtih #{instance}"
 
     #ospfd routine
-    oregistry = new OspfdRegistry plugindir+"/Ospfd.db"    
+    oregistry = new OspfdRegistry plugindir+"/ospfd.db"
     oregistry.on 'ready', ->
         for service in @list()
             continue unless service instanceof OspfdService
@@ -52,7 +53,7 @@ async = require('async')
                         agent.log "restore: Ospfd #{service.id} invoke failed with:", err
                     else
                         agent.log "restore: Ospfd #{service.id} invoke succeeded wtih #{instance}"
-
+    ###
     #ripd routine
     rregistry = new RipdRegistry plugindir+"/Ripd.db"    
     rregistry.on 'ready', ->
@@ -84,44 +85,104 @@ async = require('async')
                         agent.log "restore: Bgpd #{service.id} invoke failed with:", err
                     else
                         agent.log "restore: Bgpd #{service.id} invoke succeeded wtih #{instance}"
+    ###
 
 
-
-
+    #CRUD Endpoints related to zebra daemon
     @post '/quagga/zebra': ->
         try
-            zservice = new ZebraService null, @body, {}
+            zservice = new ZebraService null, @body, configPath:'/var/stormflash/plugins/zebra',logPath: '/var/log/zebra'
         catch err
             return @next err
             
         zservice.generate (err, results) =>
             return @next err if err?
-            agent.log "POST /Zebra generation resultis suresh :" +  JSON.stringify results
+            agent.log "POST /Zebra generation results :" +  JSON.stringify results
             zregistry.add zservice
             agent.invoke zservice, (err, instance) =>
                 if err?
-                    #serverRegistry.remove service.id
+                    zregistry.remove zservice.id
                     return @next err
                 else
                     @send {id: zservice.id, running: true}
 
+
+    @get '/quagga/zebra': ->
+        @send zregistry.list()
+
+    @get '/quagga/zebra/:id': ->
+        service = zregistry.get @params.id
+        unless service?
+            @send 404
+        else
+            @send service
+
+    @put '/quagga/zebra/:id': ->
+        service = zregistry.get @params.id
+        return @send 404 unless service?
+
+        # when a service is CHANGED, it emits "ready"
+        service.updateZebra @body, (err, results) =>
+            return @next err if err?
+            agent.log "service.updateZebra:", results
+            @send { updated: true }
+
+    @del '/quagga/zebra/:id': ->
+        service = zregistry.get @params.id
+        return @send 404 unless service?
+
+        zregistry.remove @params.id
+        @send 204
+
+
+    #CRUD Endpoints related to ospf daemon
     @post '/quagga/ospfd': ->
         try
-            oservice = new OspfdService null, @body, {}
+            oservice = new OspfdService null, @body, configPath:'/var/stormflash/plugins/ospf',logPath: '/var/log/ospf'
         catch err
             return @next err
             
         oservice.generate (err, results) =>
             return @next err if err?
-            agent.log "POST /ospfd generation resultis suresh :" +  JSON.stringify results
+            agent.log "POST /ospfd generation results :" +  JSON.stringify results
             oregistry.add oservice
             agent.invoke oservice, (err, instance) =>
                 if err?
-                    #serverRegistry.remove service.id
+                    oregistry.remove oservice.id
                     return @next err
                 else
                     @send {id: oservice.id, running: true}
 
+
+    @get '/quagga/ospfd': ->
+        @send oregistry.list()
+
+    @get '/quagga/ospfd/:id': ->
+        service = oregistry.get @params.id
+        unless service?
+            @send 404
+        else
+            @send service
+
+    @put '/quagga/ospfd/:id': ->
+        service = oregistry.get @params.id
+        return @send 404 unless service?
+
+        # when a service is CHANGED, it emits "ready"
+        service.updateOspf @body, (err, results) =>
+            return @next err if err?
+            agent.log "service.updateOspf:", results
+            @send { updated: true }
+
+    @del '/quagga/ospfd/:id': ->
+        service = oregistry.get @params.id
+        return @send 404 unless service?
+
+        oregistry.remove @params.id
+        @send 204
+
+
+    ###
     @post '/quagga/ripd': ->
         try
             rservice = new RipdService null, @body, {}
@@ -157,7 +218,6 @@ async = require('async')
                     @send {id: bservice.id, running: true}
 
 
-###
     @get '/quagga/zebra/config': ->
         @send zservice.getconfig()
 
@@ -169,4 +229,4 @@ async = require('async')
 
     @get '/quagga/ospfd/invocation': ->
         @send oservice.getinvocation()
-###
+    ###
