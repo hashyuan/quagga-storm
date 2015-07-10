@@ -107,8 +107,8 @@ class ospfdService extends StormService
             delete data.instance
 
         opts ?= {}
-        opts.configPath ?= "/var/stormflash/plugins/quagga"
-        opts.logPath ?= "/var/log/quagga"
+        opts.configPath ?= "/var/stormflash/plugins/ospf"
+        opts.logPath ?= "/var/log/ospf"
 
         super id, data, opts
 
@@ -152,11 +152,17 @@ class ospfdService extends StormService
 
             callback ospfdconfig
 
+    updateOspf: (ospfdconfig, callback) ->
+        @data = ospfdconfig
+        @generate 'service', callback
+
+    ###
     getconfig: ->
         return @configs
     getinvocation: ->
         return @invocation
-
+    ###
+        
     destructor: ->
         @eliminate()
         #@out.close()

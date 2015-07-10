@@ -66,8 +66,8 @@ class zebraService extends StormService
             delete data.instance
 
         opts ?= {}
-        opts.configPath ?= "/var/stormflash/plugins/quagga"
-        opts.logPath ?= "/var/log/quagga"
+        opts.configPath ?= "/var/stormflash/plugins/zebra"
+        opts.logPath ?= "/var/log/zebra"
 
         super id, data, opts
 
@@ -101,10 +101,17 @@ class zebraService extends StormService
                             when "ipv6-forwarding"
                                 zebraconfig += "ipv6 forwarding" + "\n"
             callback zebraconfig
+
+    updateZebra: (zebraconfig, callback) ->
+        @data = zebraconfig
+        @generate 'service', callback
+
+    ###        
     getconfig: ->
         return @configs
     getinvocation: ->
         return @invocation
+    ###
 
     destructor: ->
         @eliminate()
