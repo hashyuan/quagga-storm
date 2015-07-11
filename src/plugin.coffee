@@ -1,3 +1,5 @@
+fs = require 'fs'
+
 ZebraService = require './zebra-service'
 ZebraRegistry = require './zebra-registry'
 OspfdService = require './ospfd-service'
@@ -20,10 +22,16 @@ async = require('async')
         throw  new Error "this plugin requires to be running in the context of a valid StormAgent!"
 
     plugindir = @settings.plugindir
-    plugindir ?= "/var/stormflash/plugins/zebra"
+    plugindir ?= "/var/stormflash/plugins"
 
     # Zebra routine
-    zregistry = new ZebraRegistry plugindir+"/zebra.db"
+    zplugindir = plugindir+"/zebra"
+    if zplugindir?
+    	try
+            fs.mkdir "#{zplugindir}", () ->
+        catch err
+            agent.log "Error while creating zebra plugin dir", err
+    zregistry = new ZebraRegistry zplugindir+"/zebra.db"
     zregistry.on 'ready', ->
         for service in @list()
             continue unless service instanceof ZebraService
@@ -39,7 +47,13 @@ async = require('async')
                         agent.log "restore: Zebra #{service.id} invoke succeeded wtih #{instance}"
 
     #ospfd routine
-    oregistry = new OspfdRegistry plugindir+"/ospfd.db"
+    oplugindir = plugindir+"/ospf"
+    if oplugindir?
+    	try
+            fs.mkdir "#{oplugindir}", () ->
+        catch err
+            agent.log "Error while creating ospf plugin dir", err
+    oregistry = new OspfdRegistry oplugindir+"/ospfd.db"
     oregistry.on 'ready', ->
         for service in @list()
             continue unless service instanceof OspfdService
@@ -94,6 +108,8 @@ async = require('async')
             zservice = new ZebraService null, @body, configPath:'/var/stormflash/plugins/zebra',logPath: '/var/log/zebra'
         catch err
             return @next err
+        
+        agent.log "POST body: ", @body
             
         zservice.generate (err, results) =>
             return @next err if err?
@@ -101,7 +117,7 @@ async = require('async')
             zregistry.add zservice
             agent.invoke zservice, (err, instance) =>
                 if err?
-                    zregistry.remove zservice.id
+                    #zregistry.remove zservice.id
                     return @next err
                 else
                     @send {id: zservice.id, running: true}
@@ -142,13 +158,15 @@ async = require('async')
         catch err
             return @next err
             
+        agent.log "POST body: ", @body
+            
         oservice.generate (err, results) =>
             return @next err if err?
             agent.log "POST /ospfd generation results :" +  JSON.stringify results
             oregistry.add oservice
             agent.invoke oservice, (err, instance) =>
                 if err?
-                    oregistry.remove oservice.id
+                    #oregistry.remove oservice.id
                     return @next err
                 else
                     @send {id: oservice.id, running: true}

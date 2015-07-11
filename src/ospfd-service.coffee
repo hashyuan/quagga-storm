@@ -9,7 +9,7 @@ class ospfdService extends StormService
         type: "object"
         additionalProperties: true
         properties:
-            hostname:         {"type":"string", "required":true}
+            hostname:         {"type":"string", "required":false}
             password:         {"type":"string", "required":true}
             'enable-password': {"type":"string", "required":false}
             'log-file':        {"type":"string", "required":false}
@@ -54,7 +54,7 @@ class ospfdService extends StormService
                                 type: "array"
                                 items:
                                     name: "network"
-                                    type: "string"
+                                    type: "object"
                                     required:false
                                     additionalproperties: true
                                     properties:
@@ -64,12 +64,12 @@ class ospfdService extends StormService
                                 type: "array"
                                 items:
                                     name: "redis"
-                                    type: "string"
-                                    required:false
+                                    type: "object"
+                                    required: "object"
                                     additionalproperties: true
                                     properties:
                                         redis: {type:"string", required:false}
-
+            'ip-forwarding': {"type":"boolean", "required":false}    
             'line': {"type":"string", "required":false}
             
     invocation:
@@ -91,10 +91,12 @@ class ospfdService extends StormService
                             when "name"
                                 if arraykey is "interfaces"
                                     config += "interface"+ ' ' + valuee + "\n"
+                            when "ospfConfig"
+                                config += ' '+ "ip ospf"+ ' ' + valuee + "\n" 
                             when "ipaddr"
-                                config += "network"+ ' ' + valuee + "\n"
+                                config += ' '+ "network"+ ' ' + valuee + "\n"
                             when "redis"
-                                config += "redistribute"+ ' ' + valuee + "\n"
+                                config += ' '+ "redistribute"+ ' ' + valuee + "\n"
                             else
                                 config += ' ' + keyyy + ' ' + valuee + "\n"
                     when "boolean"
@@ -116,7 +118,7 @@ class ospfdService extends StormService
             service:    filename:"#{@configPath}/ospfd_#{@id}.conf"
 
         @invocation = merge @invocation,
-            args: ["--config_file=#{@configs.service.filename}","-d"]
+            args: ["--config_file=#{@configs.service.filename}"]
             options: { stdio: ["ignore", @out, @err] }
 
         @configs.service.generator = (callback) =>
@@ -128,7 +130,7 @@ class ospfdService extends StormService
                             switch (typeof value)
                                 when "object"
                                     if keyy is 'interfaces' #interfaces array
-                                        ospfdconfig+= processArray keyy, value, ospfdconfig
+                                        ospfdconfig+= @processArray keyy, value, ospfdconfig
                                     else if keyy is 'router' #router object
                                         for keyyy, valuee of value
                                             switch valuee
@@ -138,7 +140,7 @@ class ospfdService extends StormService
                                                     else if keyyy is 'ospf-rid'
                                                         ospfdconfig += ' '+"ospf router-id" + ' ' + valuee + "\n"
                                                 when "object" #networks array,redistribute array
-                                                    ospfdconfig+= processArray keyy, valuee, ospfdconfig
+                                                    ospfdconfig+= @processArray keyy, valuee, ospfdconfig
                     when "number", "string"
                         switch key
                             when "enable-password"
@@ -148,7 +150,10 @@ class ospfdService extends StormService
                             else
                                 ospfdconfig += key + ' ' + val + "\n"
                     when "boolean"
-                        ospfdconfig += key + "\n"
+                        if key is "ip-forwarding"
+                            ospfdconfig += "ip forwarding" + "\n"
+                        else
+                            ospfdconfig += key + "\n"
 
             callback ospfdconfig
 
