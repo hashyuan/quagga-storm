@@ -1,0 +1,69 @@
+STEP-1 - Check whether plugin is installed and imported
+------
+Login to VM and check whether the plugin is imported properly
+
+curl -X GET localhost:5000/packages
+
+Output must contain : 
+{
+    "name": "quagga-storm",
+    "version": "*",
+    "source": "builtin",
+    "type": "npm",
+    "status":
+    { "installed": true, "imported": true }
+    ,
+    "id": "5c7cde50-bd27-4a8a-be43-07c64cb7e9e5"
+}
+
+STEP-2 - Launch zebra process through ZEBRA specific endpoint and check the response
+------
+
+curl -X POST localhost:5000/quagga/zebra -H "Content-Type: application/json" -d@/tmp/zebra.json
+
+Response:
+{
+      "id": "bf99b1d7-7491-490b-bddb-52b4ea3aa4ec",
+        "running": true
+}
+
+If you do ps, the zebra process pid must be present - 
+25358 root       972 S    /sbin/getty -L ttyS0 115200 vt100
+25381 root      1584 S    /sbin/zebra --config_file=/var/stormflash/plugins/zebra/zebra_bf99b1d7-7491-490b-bddb-52b4ea3aa4ec.conf
+
+
+zebra_bf99b1d7-7491-490b-bddb-52b4ea3aa4ec.conf is the config file generated through POST call.
+Also, check /var/log/zebra.log for the zebra pid launch status. Additionally, you can run "vtysh" to check whether you are able to login to QUAGGA terminal.
+
+STEP-3 - Similarly PUT, GET endpoints can be tested with the below curl commands within the VSC
+------
+
+curl -X PUT localhost:5000/quagga/zebra/d5deefb1-990d-43a7-bae8-d1667b005a19 -H "Content-Type: application/json" -d@/tmp/zebra.json
+curl -X GET localhost:5000/quagga/zebra -H "Content-Type: application/json"
+curl -X GET localhost:5000/quagga/zebra/d5deefb1-990d-43a7-bae8-d1667b005a19 -H "Content-Type: application/json"
+
+STEP-4 - Launch OSPFD process through OSPFD specific endpoint and check the response
+------
+
+curl -X POST localhost:5000/quagga/ospfd -H "Content-Type: application/json" -d@/tmp/ospfd.json
+
+Response:
+{
+      "id": "bf99b1d7-7491-490b-bddb-52b4ea3aa4ec",
+        "running": true
+}
+
+If you do ps, the ospf process pid must be present - 
+25358 root       972 S    /sbin/getty -L ttyS0 115200 vt100
+25381 root      1584 S    /sbin/ospf --config_file=/var/stormflash/plugins/ospf/ospf_bf99b1d7-7491-490b-bddb-52b4ea3aa4ec.conf
+
+ospf_bf99b1d7-7491-490b-bddb-52b4ea3aa4ec.conf is the config file generated through POST call.
+Also, check /var/log/ospf.log for the zebra pid launch status. Additionally, you can run "vtysh" to check whether you are able to login to QUAGGA terminal.
+
+
+STEP-5 - Similarly PUT, GET endpoints can be tested with the below curl commands within the VSC
+------
+
+curl -X PUT localhost:5000/quagga/ospfd/d5deefb1-990d-43a7-bae8-d1667b005a19 -H "Content-Type: application/json" -d@/tmp/ospfd.json
+curl -X GET localhost:5000/quagga/ospfd -H "Content-Type: application/json"
+curl -X GET localhost:5000/quagga/ospfd/d5deefb1-990d-43a7-bae8-d1667b005a19 -H "Content-Type: application/json"

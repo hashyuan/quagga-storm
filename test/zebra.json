@@ -1,0 +1,19 @@
+{
+  "password": "zebra",
+  "enable-password": "zebra",
+  "log-file": "/var/log/zebra.log",
+  "interfaces": [
+    {
+      "name": "tun4",
+      "description": "Area 0.0.0.1",
+      "link-detect": true
+    },
+    {
+      "name": "wan0",
+      "description": "WAN Link",
+      "link-detect": true
+    }
+  ],
+  "ip-forwarding":true,
+  "line": "vty"
+}

@@ -1,0 +1,48 @@
+{
+    "password": "zebra",
+    "enable-password": "zebra",
+    "log-file": "/var/log/ospf.log",
+    "iprouting": {
+      "interfaces": [
+        {
+          "name": "wan0",
+          "description": "WAN Link"     
+        },
+        {
+          "name": "tun4",
+          "description": "link to OSPF router",
+          "ip": [
+            {
+              "ospfConfig": "network point-to-point"
+            },
+            {
+              "ospfConfig": "mtu-ignore"
+            }
+          ]
+        }
+      ],
+      "router": {
+        "name": "ospf",
+        "default-information": "originate metric 100",
+        "ospf-rid": "3.3.3.3",
+        "networks": [
+          {
+            "ipaddr": "172.12.1.4/30 area 0.0.0.1"
+          }
+        ],
+        "redistribute": [
+          {
+            "redis": "kernel"
+          },
+          {
+            "redis": "connected"
+          },
+          {
+            "redis": "static"
+          }
+        ]
+      }
+    },
+    "ip-forwarding":true,
+    "line": "vty"
+}

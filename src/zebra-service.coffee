@@ -40,7 +40,7 @@ class zebraService extends StormService
             detached: true
             stdio: ["ignore", -1, -1]
 
-    # A function to process arrays and build ospf config
+    # A function to process arrays and build zebra config
     processArray: (arraykey, value, config) ->
 
         for obj in value
@@ -75,7 +75,7 @@ class zebraService extends StormService
             service:    filename:"#{@configPath}/zebra_#{@id}.conf"
 
         @invocation = merge @invocation,
-            args: ["--config_file=#{@configs.service.filename}","-d"]
+            args: ["--config_file=#{@configs.service.filename}"]
             options: { stdio: ["ignore", @out, @err] }
 
         @configs.service.generator = (callback) =>
@@ -83,7 +83,7 @@ class zebraService extends StormService
             for key, val of @data
                 switch (typeof val)
                     when "object"
-                        zebraconfig+= processArray key, val, zebraconfig
+                        zebraconfig+= @processArray key, val, zebraconfig
                     when "number", "string"
                         switch key
                             when "enable-password"
