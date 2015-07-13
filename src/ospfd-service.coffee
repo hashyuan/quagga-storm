@@ -34,7 +34,6 @@ class ospfdService extends StormService
                                     name: "ip"
                                     type: "array"
                                     items:
-                                        name: "ospf"
                                         type: "object"
                                         required: false
                                         additionalproperties: true
@@ -82,7 +81,8 @@ class ospfdService extends StormService
             stdio: ["ignore", -1, -1]
 
     # A function to process arrays and build ospf config
-    processArray: (arraykey, value, config) ->
+    processArray: (arraykey, value) ->
+        config = ''
         for objj in value
             for keyyy,valuee of objj
                 switch (typeof valuee)
@@ -91,14 +91,19 @@ class ospfdService extends StormService
                             when "name"
                                 if arraykey is "interfaces"
                                     config += "interface"+ ' ' + valuee + "\n"
-                            when "ospfConfig"
-                                config += ' '+ "ip ospf"+ ' ' + valuee + "\n" 
                             when "ipaddr"
                                 config += ' '+ "network"+ ' ' + valuee + "\n"
                             when "redis"
                                 config += ' '+ "redistribute"+ ' ' + valuee + "\n"
                             else
                                 config += ' ' + keyyy + ' ' + valuee + "\n"
+                    when "object"
+                        for objjj in valuee
+                            for keyyyy,valueee of objjj
+                                switch (typeof valueee)
+                                    when "number", "string"
+                                        if keyyy is "ip"
+                                            config += ' '+ "ip ospf"+ ' ' + valueee + "\n"
                     when "boolean"
                         config += ' ' + keyyy + "\n"
         config
@@ -130,17 +135,19 @@ class ospfdService extends StormService
                             switch (typeof value)
                                 when "object"
                                     if keyy is 'interfaces' #interfaces array
-                                        ospfdconfig+= @processArray keyy, value, ospfdconfig
+                                        ospfdconfig+= @processArray keyy, value
                                     else if keyy is 'router' #router object
                                         for keyyy, valuee of value
-                                            switch valuee
+                                            switch (typeof valuee)
                                                 when "string","number"
                                                     if keyyy is 'name'
                                                         ospfdconfig += "router #{valuee}" + "\n"
                                                     else if keyyy is 'ospf-rid'
-                                                        ospfdconfig += ' '+"ospf router-id" + ' ' + valuee + "\n"
+                                                        ospfdconfig += ' ' + "ospf router-id" + ' ' + valuee + "\n"
+                                                    else
+                                                        ospfdconfig += ' ' + keyyy + ' ' + valuee + "\n"    
                                                 when "object" #networks array,redistribute array
-                                                    ospfdconfig+= @processArray keyy, valuee, ospfdconfig
+                                                    ospfdconfig+= @processArray keyy, valuee
                     when "number", "string"
                         switch key
                             when "enable-password"
@@ -157,8 +164,8 @@ class ospfdService extends StormService
 
             callback ospfdconfig
 
-    updateOspf: (ospfdconfig, callback) ->
-        @data = ospfdconfig
+    updateOspf: (newconfig, callback) ->
+        @data = newconfig
         @generate 'service', callback
 
     ###
