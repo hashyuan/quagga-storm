@@ -10,7 +10,6 @@ class zebraService extends StormService
         required: true
         additionalProperties: true
         properties:
-            hostname:         {"type":"string", "required":false}
             password:         {"type":"string", "required":true}
             'enable-password': {"type":"string", "required":false}
             'log-file':        {"type":"string", "required":false}
@@ -30,6 +29,7 @@ class zebraService extends StormService
             'ip-forwarding':   {"type":"boolean", "required":false}
             'ipv6-forwarding':   {"type":"boolean", "required":false}
             'line':        {"type":"string", "required":false}
+            hostname:         {"type":"string", "required":false}
 
     invocation:
         name: 'zebra'
@@ -41,8 +41,9 @@ class zebraService extends StormService
             stdio: ["ignore", -1, -1]
 
     # A function to process arrays and build zebra config
-    processArray: (arraykey, value, config) ->
+    processArray: (arraykey, value) ->
 
+        config = ''
         for obj in value
             for key,valuee of obj
                 switch (typeof valuee)
@@ -83,7 +84,7 @@ class zebraService extends StormService
             for key, val of @data
                 switch (typeof val)
                     when "object"
-                        zebraconfig+= @processArray key, val, zebraconfig
+                        zebraconfig += @processArray key, val
                     when "number", "string"
                         switch key
                             when "enable-password"
@@ -100,10 +101,12 @@ class zebraService extends StormService
                                 zebraconfig += "ip forwarding" + "\n"
                             when "ipv6-forwarding"
                                 zebraconfig += "ipv6 forwarding" + "\n"
+                            else
+                                zebraconfig += key + "\n"
             callback zebraconfig
 
-    updateZebra: (zebraconfig, callback) ->
-        @data = zebraconfig
+    updateZebra: (newconfig, callback) ->
+        @data = newconfig
         @generate 'service', callback
 
     ###        
