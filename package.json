@@ -50,9 +50,7 @@
     "prepublish": "mkdir -p lib; coffee -o lib -c src"
   },
   "contributors": [
-    {
       "Sivaprasath Busa"
-    }
   ],
   "readmeFilename": "README.md",
   "readme": "",
