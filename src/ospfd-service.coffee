@@ -104,6 +104,10 @@ class ospfdService extends StormService
                                     when "number", "string"
                                         if keyyy is "ip"
                                             config += ' '+ "ip ospf"+ ' ' + valueee + "\n"
+                                        else
+                                            config += ' ' + keyyyy + ' ' + valueee + "\n"
+                                    when "boolean"
+                                        config += ' ' + keyyyy + "\n"
                     when "boolean"
                         config += ' ' + keyyy + "\n"
         config

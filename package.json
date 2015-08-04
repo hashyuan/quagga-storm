@@ -1,7 +1,7 @@
 {
   "name": "quagga-storm",
   "description": "quagga-storm plugin module manages stormflash enabled zebra and its associated routing protocols like ospf, rip and bgp",
-  "version": "0.1.0",
+  "version": "0.1.7",
   "author": {
     "name": "Suresh Kumar"
   },
@@ -46,9 +46,6 @@
     "quagga",
     "zebra"
   ],
-  "scripts": {
-    "prepublish": "mkdir -p lib; coffee -o lib -c src"
-  },
   "contributors": [
       "Sivaprasath Busa"
   ],
