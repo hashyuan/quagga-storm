@@ -104,12 +104,12 @@ class ospfdService extends StormService
                                     when "number", "string"
                                         if keyyy is "ip"
                                             config += ' '+ "ip ospf"+ ' ' + valueee + "\n"
-                                        else
-                                            config += ' ' + keyyyy + ' ' + valueee + "\n"
                                     when "boolean"
-                                        config += ' ' + keyyyy + "\n"
+                                        if valueee is true
+                                            config += ' ' + keyyyy + "\n"
                     when "boolean"
-                        config += ' ' + keyyy + "\n"
+                        if valuee is true
+                            config += ' ' + keyyy + "\n"
         config
 
     constructor: (id, data, opts) ->
@@ -149,7 +149,7 @@ class ospfdService extends StormService
                                                     else if keyyy is 'ospf-rid'
                                                         ospfdconfig += ' ' + "ospf router-id" + ' ' + valuee + "\n"
                                                     else
-                                                        ospfdconfig += ' ' + keyyy + ' ' + valuee + "\n"    
+                                                        ospfdconfig += ' ' + keyyy + ' ' + valuee + "\n"
                                                 when "object" #networks array,redistribute array
                                                     ospfdconfig+= @processArray keyy, valuee
                     when "number", "string"
@@ -161,10 +161,11 @@ class ospfdService extends StormService
                             else
                                 ospfdconfig += key + ' ' + val + "\n"
                     when "boolean"
-                        if key is "ip-forwarding"
-                            ospfdconfig += "ip forwarding" + "\n"
-                        else
-                            ospfdconfig += key + "\n"
+                        if val is true
+                            if key is "ip-forwarding"
+                                ospfdconfig += "ip forwarding" + "\n"
+                            else
+                                ospfdconfig += key + "\n"
 
             callback ospfdconfig
 

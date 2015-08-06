@@ -57,7 +57,8 @@ class zebraService extends StormService
                             else
                                 config += ' ' + key + ' ' + valuee + "\n"
                     when "boolean"
-                        config += ' ' + key + "\n"
+                        if valuee is true
+                            config += ' ' + key + "\n"
         config
 
 
@@ -98,11 +99,14 @@ class zebraService extends StormService
                     when "boolean"
                         switch key
                             when "ip-forwarding"
-                                zebraconfig += "ip forwarding" + "\n"
+                                if val is true
+                                    zebraconfig += "ip forwarding" + "\n"
                             when "ipv6-forwarding"
-                                zebraconfig += "ipv6 forwarding" + "\n"
+                                if val is true
+                                    zebraconfig += "ipv6 forwarding" + "\n"
                             else
-                                zebraconfig += key + "\n"
+                                if val is true
+                                    zebraconfig += key + "\n"
             callback zebraconfig
 
     updateZebra: (newconfig, callback) ->
