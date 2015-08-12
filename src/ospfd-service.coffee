@@ -7,7 +7,7 @@ class ospfdService extends StormService
     schema :
         name: "ospfd"
         type: "object"
-        additionalProperties: true
+        additionalProperties: false
         properties:
             hostname:         {"type":"string", "required":false}
             password:         {"type":"string", "required":true}
@@ -17,7 +17,7 @@ class ospfdService extends StormService
                 name: "ospf routing"
                 type: "object"
                 required:false
-                additionalProperties: true
+                additionalProperties: false
                 properties:
                     interfaces:
                         name: "interfaces"
@@ -26,7 +26,7 @@ class ospfdService extends StormService
                             name: "interface"
                             type: "object"
                             required: false
-                            additionalproperties: true
+                            additionalProperties: false
                             properties:
                                 name: {type:"string", required:false}
                                 description: {type:"string", required:false}
@@ -36,14 +36,14 @@ class ospfdService extends StormService
                                     items:
                                         type: "object"
                                         required: false
-                                        additionalproperties: true
+                                        additionalProperties: false
                                         properties:
                                             ospfConfig: {type:"string", required:false}
                     router:
                         name: "ospf"
                         type: "object"
                         required: false
-                        additionalProperties: true
+                        additionalProperties: false
                         properties:
                             name: {type:"string", required:false}
                             'default-information': {type:"string", required:false}
@@ -55,7 +55,7 @@ class ospfdService extends StormService
                                     name: "network"
                                     type: "object"
                                     required:false
-                                    additionalproperties: true
+                                    additionalProperties: false
                                     properties:
                                         ipaddr: {type:"string", required:false}
                             redistribute:
@@ -64,11 +64,10 @@ class ospfdService extends StormService
                                 items:
                                     name: "redis"
                                     type: "object"
-                                    required: "object"
-                                    additionalproperties: true
+                                    required: false
+                                    additionalProperties: false
                                     properties:
                                         redis: {type:"string", required:false}
-            'ip-forwarding': {"type":"boolean", "required":false}    
             'line': {"type":"string", "required":false}
             
     invocation:
@@ -162,10 +161,7 @@ class ospfdService extends StormService
                                 ospfdconfig += key + ' ' + val + "\n"
                     when "boolean"
                         if val is true
-                            if key is "ip-forwarding"
-                                ospfdconfig += "ip forwarding" + "\n"
-                            else
-                                ospfdconfig += key + "\n"
+                            ospfdconfig += key + "\n"
 
             callback ospfdconfig
 

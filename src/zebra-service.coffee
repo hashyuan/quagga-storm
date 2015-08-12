@@ -8,7 +8,7 @@ class zebraService extends StormService
         name: "zebra"
         type: "object"
         required: true
-        additionalProperties: true
+        additionalProperties: false
         properties:
             password:         {"type":"string", "required":true}
             'enable-password': {"type":"string", "required":false}
@@ -19,7 +19,7 @@ class zebraService extends StormService
                 items:
                     type: "object"
                     required: false
-                    additionalProperties: true
+                    additionalProperties: false
                     properties:
                         name: {type:"string",required:"false"}
                         description: {type:"string", required:false}
@@ -27,6 +27,7 @@ class zebraService extends StormService
                         'ip-address':        {"type":"string", "required":false}
             'ip-route':        {"type":"string", "required":false}
             'ip-forwarding':   {"type":"boolean", "required":false}
+            'no-ip-forwarding':   {"type":"boolean", "required":false}
             'ipv6-forwarding':   {"type":"boolean", "required":false}
             'line':        {"type":"string", "required":false}
             hostname:         {"type":"string", "required":false}
@@ -101,6 +102,9 @@ class zebraService extends StormService
                             when "ip-forwarding"
                                 if val is true
                                     zebraconfig += "ip forwarding" + "\n"
+                            when "no-ip-forwarding"
+                                if val is true
+                                    zebraconfig += "no ip forwarding" + "\n"
                             when "ipv6-forwarding"
                                 if val is true
                                     zebraconfig += "ipv6 forwarding" + "\n"
