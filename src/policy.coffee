@@ -1,37 +1,9 @@
+Valid = require('jsonschema').Validator
+Validator = new Valid
 assert = require 'assert'
 Promise = require 'bluebird'
 async = require 'async'
 needle = Promise.promisifyAll(require('needle'))
-
-validateUUID = (data, opts) ->
-    validator = require 'validator'
-    return validator.isUUID(data)
-
-validatePort = (data, opts) ->
-    return false if  data > 65536 or data < 0
-    match = opts.rules?.filter (rule) ->
-        return true if rule is data
-    return false if match?.len > 0 and opts.rules?.len > 0
-    return true
-
-validateProtocol = (data, rules) ->
-    match = opts.rules?.filter (rule) ->
-        return true if data is rule
-    return true if match.len > 0
-    return false
-
-validateString = (data, rules) ->
-    return true
-
-validateMaps =
-    "type:uuid": validateUUID
-    "type:port": validatePort
-    "type:string": validateString
-    "type:protocol": validateProtocol
-
-getPromise = ->
-    return new Promise (resolve, reject) ->
-        resolve()
 
 schema_zebra =
     name: "zebra"
@@ -131,9 +103,16 @@ schema =
     "zebra": schema_zebra
     "ospfd": schema_ospfd
 
+getPromise = ->
+    return new Promise (resolve, reject) ->
+        resolve()
+
 Validate =  (obj, schema, callback) ->
-    console.log "In Validate done"
-    return true
+    options = {}
+    options.propertyName = schema.name
+    res = Validator.validate(obj, schema, options)
+    console.log "quagga-storm.Validate: #{schema.name}:\n", res.errors
+    if res.errors?.length then return false else return true
 
 
 CheckPackages = (baseUrl) ->
@@ -215,8 +194,10 @@ Stop = (context, callback) ->
     .nodeify (callback)
 
 Update = (context, callback) ->
-    throw new Error name:'missingParams' unless context?.instances and context?.policyConfig
+    throw new Error name:'missingParams' unless context?.instances? and context?.policyConfig?
     for instance in context.instances
+        conf = context.policyConfig[instance.name]
+        Validate conf, schema[instance.name]
         instance.conf = context.policyConfig[instance.name]
 
     getPromise()
@@ -279,11 +260,59 @@ if require.main is module
                 "password": "ospfd"
                 "enable-password": "ospfd"
                 "log-file": "/var/log/zebra.log"
+                "interfaces": [
+                    {
+                    "name": "wan0"
+                    "description": "WAN Link"
+                    "link-detect": true
+                    }
+                ]
+                "ip-forwarding": true
+                "ip-route": "10.1.1.0/24 172.12.1.5"
                 "line": "vty"
             "ospfd":
                 "password": "ospfd"
                 "enable-password": "ospfd"
                 "log-file": "/var/log/ospf.log"
+                "iprouting":
+                    "interfaces": [
+                        {
+                            "name": "wan0"
+                            "description": "WAN Link"
+                        },
+                        {
+                            "name": "tun4"
+                            "description": "link to OSPF router"
+                            "ip": [
+                                {
+                                    "ospfConfig": "network point-to-point"
+                                },
+                                {
+                                    "ospfConfig": "mtu-ignore"
+                                }
+                            ]
+                        }
+                        ]
+                    "router":
+                        "name": "ospf"
+                        "default-information": "originate metric 100"
+                        "ospf-rid": "3.3.3.3"
+                        "networks": [
+                            {
+                                "ipaddr": "172.12.1.4/30 area 0.0.0.1"
+                            }
+                            ]
+                        "redistribute": [
+                            {
+                                "redis": "kernel"
+                            },
+                            {
+                                "redis": "connected"
+                            },
+                            {
+                                "redis": "static"
+                            }
+                        ]
                 "line": "vty"
 
     getPromise()
