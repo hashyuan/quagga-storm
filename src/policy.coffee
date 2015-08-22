@@ -132,7 +132,6 @@ CheckPackages = (baseUrl) ->
     
     needle.getAsync baseUrl+'/packages'
     .then (resp) =>
-        console.log "resp[1] ", resp[1]
         return resp[1]
     .then (rpkgs) =>
         rpkgs?.filter (rpkg) =>
@@ -159,18 +158,27 @@ Start =  (context, callback) ->
                     needle.postAsync context.baseUrl+ "/quagga/#{Config.name}", Config.config, json:true
                     .then (resp) =>
                         throw new Error 'invalidStatusCode' unless resp[0].statusCode is 200
-                        return { name: Config.name, id: resp[1].id }
+                        { name: Config.name, id: resp[1].id }
                     .catch (err) =>
-                        console.log "quagga-storm.Start: Failed in postAsync ", Config, err
-                        throw new Error err
+                        throw err
 
                 .then (resp) =>
-                    #console.log "quagga-storm.Start: resp ", resp
-                    context.instances = resp
-                    context.bFactoryPush = true
-                    return resp
+                    resp
+
+                .catch (err) =>
+                    console.log "quagga-storm.Start 1: resp ", err
+
+    .then (resp) =>
+        if resp
+            context.bFactoryPush = true
+            resp = resp.filter (instance) =>
+                return true if instance
+
+            context.instances = resp
         else
-            return []
+            context.instances = []
+
+        context.instances
 
     .nodeify (callback)
 
@@ -179,22 +187,21 @@ Stop = (context, callback) ->
     getPromise()
     .then (resp) ->
         Promise.map context.instances, (instance) =>
-            needle.deleteAsync context.baseUrl+"/quagga/#{instance.name}/#{instance.id}"
-                .then (resp) =>
-                    throw new Error name:'invalidStatusCode', value:resp[0].statusCode unless resp[0].statusCode is 204
-                    return resp[1]
-                .catch (err) ->
-                    console.log "quagga-storm.Stop: Failed in deleteAsync ", instance, err
-                    throw new Error err
+            needle.deleteAsync context.baseUrl+ "/quagga/#{instance.name}/#{instance.id}", null
+            .then (resp) =>
+                throw new Error name:'invalidStatusCode', value:resp[0].statusCode unless resp[0].statusCode is 204
+                return 'done'
+            .catch (err) =>
+                #console.log "quagga-storm.Stop: Failed in deleteAsync ", instance, err
+                throw err
 
         .then (resp) =>
-            #console.log "quagga-storm.Stop: resp ", resp
             context.instances = []
 
     .nodeify (callback)
 
 Update = (context, callback) ->
-    throw new Error name:'missingParams' unless context?.instances? and context?.policyConfig?
+    throw new Error name:'missingParams' unless context.instances and context.policyConfig
     for instance in context.instances
         conf = context.policyConfig[instance.name]
         Validate conf, schema[instance.name]
@@ -209,24 +216,28 @@ Update = (context, callback) ->
                 (entry = {})[instance.name] = instance.id
                 return entry
             .catch (err) =>
-                console.log "quagga-storm.Update: Failed in putAsync ", instance, err
-                throw new Error err
+                #console.log "quagga-storm.Update: Failed in putAsync ", instance, err
+                throw err
 
     .then (resp) =>
         #console.log "quagga-storm.Update: resp ", resp
-        return resp
+        resp
+
+    .catch (err) =>
+        throw err
 
     .nodeify (callback)
 
 Verify = (context, callback) ->
     unless context.bInstalledPackages
-        Promise.try =>
-            return CheckPackages context.baseUrl
+        getPromise()
+        .then (resp) =>
+            CheckPackages context.baseUrl
 
         .then (packs) =>
-            return true unless packs?.length
+            true unless packs?.length
     else
-        return true
+        true
 
 methods =
     Start: Start
@@ -318,11 +329,17 @@ if require.main is module
     getPromise()
     .then (resp) =>
         return Start context
+    .catch (err) =>
+        console.log "Start err ", err
     .then (resp) =>
-        console.log "result from Start ", resp
+        console.log "result from Start:\n ", resp
         return Update context
+    .catch (err) =>
+        console.log "Update err ", err
     .then (resp) =>
-        console.log "result from Update ", resp
+        console.log "result from Update:\n ", resp
         return Stop context
+    .catch (err) =>
+        console.log "Stop err ", err
     .then (resp) =>
-        console.log "result from Stop ", resp
+        console.log "result from Stop:\n ", resp
