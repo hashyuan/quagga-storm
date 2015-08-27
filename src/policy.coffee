@@ -107,6 +107,7 @@ getPromise = ->
     return new Promise (resolve, reject) ->
         resolve()
 
+
 Validate =  (obj, schema, callback) ->
     options = {}
     options.propertyName = schema.name
@@ -115,141 +116,128 @@ Validate =  (obj, schema, callback) ->
     if res.errors?.length then return false else return true
 
 
-CheckPackages = (baseUrl) ->
-    pkgs = require('../package.json').stormflash.packages
-    packages = []
-    for pkg in pkgs
-        pack =
-            name: pkg.split("://")[1]
-            version: '*'
-            source:pkg.split("://")[0]+"://"
-        packages.push pack
-    plugin =
-        name:require('../package.json').name
-        version:require('../package.json').version
-        source:"npm://"
-    packages.push  plugin
-    
-    needle.getAsync baseUrl+'/packages'
-    .then (resp) =>
-        return resp[1]
-    .then (rpkgs) =>
-        rpkgs?.filter (rpkg) =>
-            packages = packages.filter (pkg) =>
-                return true if not (pkg.name is rpkg.name and (rpkg.source is 'builtin' or rpkg.source is pkg.source) and (pkg.version is "*" or pkg.version is rpkg.version))
+Start =  (context, entry, mservice, svcInfo) ->
+    if context.bInstalledPackages
+        serviceData = @serviceMgr.services.get mservice.id
+        service = serviceData.data
+        @slog.info method:'startService', minion:entry.id, service:service, minionServiceEntry:mservice,  "setting up service in the minion"
 
-        return packages
+        switch service?.name
+            when 'quagga-clearpath'
+                configObj = service?.factoryConfig.config
+                return entry unless configObj?
+            
+                quaggaConfig = configObj['quagga-clearpath']
+                Configs = []
+                if quaggaConfig.enable and quaggaConfig.coreConfig
+                    Configs.push {name: 'zebra', config: quaggaConfig.coreConfig}
+                if quaggaConfig.protocol.ospf.enable and quaggaConfig.protocol.ospf.config
+                    Configs.push {name: 'ospfd', config: quaggaConfig.protocol.ospf.config}
 
+                getPromise()
+                .then (resp) =>
+                    console.log "quagga-storm.Start: Verify ", resp
 
-Start =  (context, callback) ->
-    getPromise()
-    .then (resp) ->
-        return Verify context
-    .then (resp) =>
-        console.log "quagga-storm.Start: Verify ", resp
-        if resp
-            Configs = []
-            for name, config of context.factoryConfig
-                if Validate config, schema[name]
-                    Configs.push {name: name, config: config}
+                    Promise.map Configs, (Config) ->
+                        needle.postAsync context.baseUrl+ "/quagga/#{Config.name}", Config.config, json:true
+                        .then (resp) =>
+                            throw new Error 'invalidStatusCode' unless resp[0].statusCode is 200
+                            { name: Config.name, id: resp[1].id }
+                        .catch (err) =>
+                            throw err
 
-            unless context.bFactoryPush
-                Promise.map Configs, (Config) ->
-                    needle.postAsync context.baseUrl+ "/quagga/#{Config.name}", Config.config, json:true
                     .then (resp) =>
-                        throw new Error 'invalidStatusCode' unless resp[0].statusCode is 200
-                        { name: Config.name, id: resp[1].id }
+                        resp
+
                     .catch (err) =>
-                        throw err
+                        console.log "quagga-storm.Start 1: resp ", err
 
                 .then (resp) =>
-                    resp
+                    if resp
+                        resp = resp.filter (instance) =>
+                            return true if instance
 
-                .catch (err) =>
-                    console.log "quagga-storm.Start 1: resp ", err
-
-    .then (resp) =>
-        if resp
-            context.bFactoryPush = true
-            resp = resp.filter (instance) =>
-                return true if instance
-
-            context.instances = resp
-        else
-            context.instances = []
-
-        context.instances
-
-    .nodeify (callback)
-
-
-Stop = (context, callback) ->
-    getPromise()
-    .then (resp) ->
-        Promise.map context.instances, (instance) =>
-            needle.deleteAsync context.baseUrl+ "/quagga/#{instance.name}/#{instance.id}", null
-            .then (resp) =>
-                throw new Error name:'invalidStatusCode', value:resp[0].statusCode unless resp[0].statusCode is 204
-                return 'done'
-            .catch (err) =>
-                #console.log "quagga-storm.Stop: Failed in deleteAsync ", instance, err
-                throw err
-
-        .then (resp) =>
-            context.instances = []
-
-    .nodeify (callback)
-
-Update = (context, callback) ->
-    throw new Error name:'missingParams' unless context.instances and context.policyConfig
-    for instance in context.instances
-        conf = context.policyConfig[instance.name]
-        Validate conf, schema[instance.name]
-        instance.conf = context.policyConfig[instance.name]
-
-    getPromise()
-    .then (resp) =>
-        Promise.map context.instances, (instance) =>
-            needle.putAsync context.baseUrl+ "/quagga/#{instance.name}/#{instance.id}", instance.conf, json:true
-            .then (resp) =>
-                throw new Error 'invalidStatusCode' unless resp[0].statusCode is 200
-                (entry = {})[instance.name] = instance.id
+                        for svc in entry.status?.provision?.services
+                            if svc.id is mservice.id
+                                svc.instance = resp
+                                entryData = new Minion entry.id, entry
+                                nentry = @minionMgr.minions.update entry.id, entryData
+                                return nentry
+            else
                 return entry
-            .catch (err) =>
-                #console.log "quagga-storm.Update: Failed in putAsync ", instance, err
-                throw err
 
-    .then (resp) =>
-        #console.log "quagga-storm.Update: resp ", resp
-        resp
+    else
+        console.log "qugga-storm isn't installed"
+        return entry
 
-    .catch (err) =>
-        throw err
 
-    .nodeify (callback)
 
-Verify = (context, callback) ->
-    unless context.bInstalledPackages
+Stop = (context, minion, service, type) ->
+    if type is 'quagga-clearpath'
+        instances = service?.instance
+        getPromise()
+        .then (resp) ->
+            Promise.map context.instances, (instance) =>
+                needle.deleteAsync context.baseUrl+ "/quagga/#{instance.name}/#{instance.id}", null
+                .then (resp) =>
+                    throw new Error name:'invalidStatusCode', value:resp[0].statusCode unless resp[0].statusCode is 204
+                    return 'done'
+                .catch (err) =>
+                    #console.log "quagga-storm.Stop: Failed in deleteAsync ", instance, err
+                    throw err
+
+        .catch (resp) =>
+                console.log "quagga-storm.Stop: ", resp
+
+        .nodeify (callback)
+
+
+Update = (context, entry, service, config, type) ->
+    if type is 'quagga-clearpath'
+        config = config['quagga-clearpath']
+        policyConfig = {}
+        if config.enable and config.coreConfig
+            policyConfig.zebra = config.coreConfig
+        if config.protocol.ospf.enable and config.protocol.ospf.config
+            policyConfig.ospfd = config.protocol.ospf.config
+
+        service = (svc for svc in entry?.status?.provision?.services when svc.id is service.id)[0]
+        instances = service?.instance
+        throw new Error name:'missingParams' unless context.instances and context.policyConfig
+        for instance in instances
+            conf = policyConfig[instance.name]
+            throw new Error "Faii to validate the config of #{instance.name}" unless Validate conf, schema[instance.name]
+            instance.conf = context.policyConfig[instance.name]
+
         getPromise()
         .then (resp) =>
-            CheckPackages context.baseUrl
+            Promise.map context.instances, (instance) =>
+                needle.putAsync context.baseUrl+ "/quagga/#{instance.name}/#{instance.id}", instance.conf, json:true
+                .then (resp) =>
+                    throw new Error 'invalidStatusCode' unless resp[0].statusCode is 200
+                    (entry = {})[instance.name] = instance.id
+                    return entry
+                .catch (err) =>
+                    #console.log "quagga-storm.Update: Failed in putAsync ", instance, err
+                    throw err
 
-        .then (packs) =>
-            true unless packs?.length
-    else
-        true
+        .then (resp) =>
+            #console.log "quagga-storm.Update: resp ", resp
+            resp
+
+        .catch (err) =>
+            throw err
+
 
 methods =
-    Start: Start
-    Stop: Stop
-    Update: Update
-    Validate: Validate
-    Verify: Verify
+    start: Start
+    stop: Stop
+    update: Update
 
-module.exports.methods = methods
+module.exports.Methods = methods
 
 
-
+###
 if require.main is module
     context =
         baseUrl: "http://10.0.3.227:5000"
@@ -326,6 +314,7 @@ if require.main is module
                         ]
                 "line": "vty"
 
+
     getPromise()
     .then (resp) =>
         return Start context
@@ -343,3 +332,5 @@ if require.main is module
         console.log "Stop err ", err
     .then (resp) =>
         console.log "result from Stop:\n ", resp
+    .done
+###
