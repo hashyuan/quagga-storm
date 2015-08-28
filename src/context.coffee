@@ -204,12 +204,10 @@ Update = (context) ->
         throw err
 
 
-methods =
-    start: Start
-    stop: Stop
-    update: Update
+module.exports.start = Start
+module.exports.stop = Stop
+module.exports.update = Update
 
-module.exports.Methods = methods
 
 
 ###

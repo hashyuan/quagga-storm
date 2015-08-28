@@ -131,3 +131,6 @@ class zebraService extends StormService
         #@emit 'destroy'
 
 module.exports = zebraService
+
+Context = require('./context')
+module.exports.Context = Context
