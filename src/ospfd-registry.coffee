@@ -1,5 +1,4 @@
 StormRegistry = require 'stormregistry'
-StormData = require 'stormdata'
 
 OspfdService = require './ospfd-service'
 

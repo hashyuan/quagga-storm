@@ -1,21 +1,21 @@
 {
-  "name": "zebra-storm",
-  "description": "zebra-storm plugin module manages stormflash enabled zebra instance",
-  "version": "0.0.1",
+  "name": "quagga-storm",
+  "description": "quagga-storm plugin module manages stormflash enabled zebra and its associated routing protocols like ospf, rip and bgp",
+  "version": "0.7.3",
   "author": {
     "name": "Suresh Kumar"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/sureshkvl/quagga-storm"
+    "url": "https://github.com/stormstack/quagga-storm"
   },
   "dependencies": {
-    "async": ">=0.9.0",
+    "async": "0.9.0",
     "fmerge": "1.1.0",
-    "mkdirp": ">=0.5.0",
-    "stormdata": ">=1.2.0",
-    "stormregistry": "1.2.x",
-    "stormservice": ">=1.0.2"
+    "mkdirp": "0.5.0",
+    "stormdata": "1.2.2",
+    "stormregistry": "1.2.1",
+    "stormservice": "1.0.5"
   },
   "engines": {
     "node": ">=0.6.x"
@@ -31,7 +31,7 @@
     "plugin": "lib/plugin"
   },
   "config": {
-    "logfile": "/var/log/quagga-zebra-storm.log",
+    "logfile": "/var/log/quagga-storm.log",
     "storm": {
       "plugins": [
         "lib/plugin"
@@ -46,17 +46,12 @@
     "quagga",
     "zebra"
   ],
-  "scripts": {
-    "prepublish": "mkdir -p lib; coffee -o lib -c src"
-  },
-  "contributors": [],
+  "contributors": [
+      "Sivaprasath Busa"
+  ],
   "readmeFilename": "README.md",
-  "bugs": {
-    "url": "https://github.com/sureshkvl/quagga-storm/issues"
-  },
-  "homepage": "https://github.com/sureshkvl/quagga-storm",
   "readme": "",
-  "_id": "quagga-storm@0.0.1",
+  "_id": "quagga-storm@0.1.0",
   "dist": {    
   },
   "_from": "quagga-storm@*",

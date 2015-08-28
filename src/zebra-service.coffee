@@ -7,46 +7,61 @@ class zebraService extends StormService
     schema :
         name: "zebra"
         type: "object"
-        additionalProperties: true
+        required: true
+        additionalProperties: false
         properties:
-            hostname:         {"type":"string", "required":true}
             password:         {"type":"string", "required":true}
-            'enable password': {"type":"string", "required":true}
-            'log file':        {"type":"string", "required":true}
+            'enable-password': {"type":"string", "required":false}
+            'log-file':        {"type":"string", "required":false}
             interfaces:
+                name: "interfaces"
                 type: "array"
                 items:
-                    name: "interface"
                     type: "object"
                     required: false
-                    additionalProperties: true
+                    additionalProperties: false
                     properties:
-                        interface: {type:"string", required:true}            
-                        description: {type:"string", required:true}
-                        'ip address':{type:"string", required:true}
-                        'ipv6 address':{type:"string", required:false}
-                        bandwidth: {type:"integer", required:false}
-                        multicast: {type:"boolean", required:false}
-                        "link-detect": {type:"boolean", required:false}
-            iproutes:
-                type: "array"
-                items:
-                    name: "iproute"
-                    type: "object"
-                    required: false
-                    additionalProperties: true
-                    properties:
-                        'ip route' : {type:"string", required:false}            
-                        'ipv6 route' : {type:"string", required:false}            
+                        name: {type:"string",required:"false"}
+                        description: {type:"string", required:false}
+                        'link-detect':       {"type":"boolean", "required":false}
+                        'ip-address':        {"type":"string", "required":false}
+            'ip-route':        {"type":"string", "required":false}
+            'ip-forwarding':   {"type":"boolean", "required":false}
+            'no-ip-forwarding':   {"type":"boolean", "required":false}
+            'ipv6-forwarding':   {"type":"boolean", "required":false}
+            'line':        {"type":"string", "required":false}
+            hostname:         {"type":"string", "required":false}
 
     invocation:
         name: 'zebra'
-        path: '/usr/lib/quagga'
+        path: '/sbin'
         monitor: true
         args: []
         options:
             detached: true
             stdio: ["ignore", -1, -1]
+
+    # A function to process arrays and build zebra config
+    processArray: (arraykey, value) ->
+
+        config = ''
+        for obj in value
+            for key,valuee of obj
+                switch (typeof valuee)
+                    when "number", "string"
+                        switch key
+                            when "name"
+                                if arraykey is "interfaces"
+                                    config += "interface"+ ' ' + valuee + "\n"
+                            when "ip-address"
+                                config += ' ' + "ip address" + ' ' + valuee + "\n"
+                            else
+                                config += ' ' + key + ' ' + valuee + "\n"
+                    when "boolean"
+                        if valuee is true
+                            config += ' ' + key + "\n"
+        config
+
 
     constructor: (id, data, opts) ->
         if data.instance?
@@ -54,7 +69,7 @@ class zebraService extends StormService
             delete data.instance
 
         opts ?= {}
-        opts.configPath ?= "/var/stormflash/plugins/quagga"
+        opts.configPath ?= "/var/stormflash/plugins/zebra"
         opts.logPath ?= "/var/log/zebra"
 
         super id, data, opts
@@ -63,7 +78,7 @@ class zebraService extends StormService
             service:    filename:"#{@configPath}/zebra_#{@id}.conf"
 
         @invocation = merge @invocation,
-            args: ["--config_file", "#{@configs.service.filename}","-d"]
+            args: ["--config_file=#{@configs.service.filename}"]
             options: { stdio: ["ignore", @out, @err] }
 
         @configs.service.generator = (callback) =>
@@ -71,24 +86,48 @@ class zebraService extends StormService
             for key, val of @data
                 switch (typeof val)
                     when "object"
-                        for obj in val	
-                            console.log "obj is " + obj	
-                            for keyy,value of obj
-                                console.log "keyy , value " + keyy
-                                zebraconfig += keyy + ' ' + value + "\n"
+                        zebraconfig += @processArray key, val
                     when "number", "string"
-                        zebraconfig += key + ' ' + val + "\n"
+                        switch key
+                            when "enable-password"
+                                zebraconfig += "enable password" + ' ' + val + "\n"
+                            when "log-file"
+                                zebraconfig += "log file" + ' ' + val + "\n"
+                            when "ip-route"
+                                zebraconfig += "ip route" + ' ' + val + "\n"
+                            else
+                                zebraconfig += key + ' ' + val + "\n"
                     when "boolean"
-                        zebraconfig += key + "\n"                        
+                        switch key
+                            when "ip-forwarding"
+                                if val is true
+                                    zebraconfig += "ip forwarding" + "\n"
+                            when "no-ip-forwarding"
+                                if val is true
+                                    zebraconfig += "no ip forwarding" + "\n"
+                            when "ipv6-forwarding"
+                                if val is true
+                                    zebraconfig += "ipv6 forwarding" + "\n"
+                            else
+                                if val is true
+                                    zebraconfig += key + "\n"
             callback zebraconfig
+
+    updateZebra: (newconfig, callback) ->
+        @data = newconfig
+        @generate 'service', callback
+
+    ###        
     getconfig: ->
         return @configs
     getinvocation: ->
         return @invocation
+    ###
 
     destructor: ->
         @eliminate()
         #@out.close()
         #@err.close()
         #@emit 'destroy'
+
 module.exports = zebraService
