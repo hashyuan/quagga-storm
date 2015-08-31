@@ -119,8 +119,9 @@ Validate =  (obj, schema, callback) ->
 Start =  (context) ->
     throw new Error 'quagga-storm.Start missingParams' unless context.bInstalledPackages and context.service.name
 
+    if context.instances?.length is 2
+        return context
     context.instances ?= []
-
     configObj = context.service.factoryConfig?.config
     config = configObj[context.service.name]
     configs = []
@@ -146,10 +147,14 @@ Start =  (context) ->
             throw err
 
     .then (resp) =>
-        if resp
-            resp = resp.filter (instance) =>
-                return true if instance
-        context.instances = resp
+        for res in resp
+            if res
+                inst = null
+                inst = instance for instance in context.instances when instance[res.name]
+                if inst
+                    inst[res.name] = res.id
+                else
+                    context.instances.push res
         return context
 
     .catch (err) =>
