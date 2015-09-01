@@ -108,12 +108,19 @@ getPromise = ->
         resolve()
 
 
-Validate =  (obj, schema, callback) ->
-    options = {}
-    options.propertyName = schema.name
-    res = Validator.validate(obj, schema, options)
-    console.log "quagga-storm.Validate: #{schema.name}:\n", res.errors
-    if res.errors?.length then return false else return true
+Validate =  (config) ->
+    policyConfig = {}
+    if config.enable and config.coreConfig
+        policyConfig.zebra = config.coreConfig
+    if config.protocol.ospf.enable and config.protocol.ospf.config
+        policyConfig.ospfd = config.protocol.ospf.config
+
+    for name, conf of policyConfig
+        options = {}
+        options.propertyName = name
+        res = Validator.validate conf, schema[name], options
+        if res.errors?.length
+            throw new Error "quagga.Validate ", res
 
 
 Start =  (context) ->
@@ -188,7 +195,6 @@ Update = (context) ->
 
     for instance in context.instances
         conf = policyConfig[instance.name]
-        throw new Error "Faii to validate the config of #{instance.name}" unless Validate conf, schema[instance.name]
         instance.conf = policyConfig[instance.name]
 
     getPromise()
@@ -212,6 +218,7 @@ Update = (context) ->
 module.exports.start = Start
 module.exports.stop = Stop
 module.exports.update = Update
+module.exports.validate = Validate
 
 
 
